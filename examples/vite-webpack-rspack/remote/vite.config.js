@@ -2,6 +2,8 @@ import { federation } from '@module-federation/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
+const PORT = 4001;
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -17,12 +19,34 @@ export default defineConfig({
     }),
   ],
   server: {
-    port: 4001,
+    configureServer(server) {
+      // mock a custom prefix for the remote
+      server.middlewares.use((req, res, next) => {
+        if (req.url?.startsWith('/custom-prefix')) {
+          // Remove the custom prefix before proceeding to the next middleware
+          req.url = req.url.replace('/custom-prefix', '');
+        }
+        next();
+      });
+    },
+    port: PORT,
+  },
+  preview: {
+    proxy: {
+      '/custom-prefix': {
+        target: `http://localhost:${PORT}`,
+        rewrite: (path) => path.replace(/^\/custom-prefix/, ''),
+      },
+    },
+    port: PORT,
   },
   build: {
     modulePreload: false,
     target: 'esnext',
     minify: false,
     cssCodeSplit: false,
+  },
+  experimental: {
+    renderBuiltUrl: (filename) => `http://localhost:4001/custom-prefix/${filename}`,
   },
 });
