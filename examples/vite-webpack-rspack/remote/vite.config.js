@@ -18,16 +18,13 @@ export default defineConfig({
       shared: ['react', 'react-dom'],
     }),
   ],
+
   server: {
-    configureServer(server) {
-      // mock a custom prefix for the remote
-      server.middlewares.use((req, res, next) => {
-        if (req.url?.startsWith('/custom-prefix')) {
-          // Remove the custom prefix before proceeding to the next middleware
-          req.url = req.url.replace('/custom-prefix', '');
-        }
-        next();
-      });
+    proxy: {
+      '/custom-prefix': {
+        target: `http://localhost:${PORT}`,
+        rewrite: (path) => path.replace(/^\/custom-prefix/, ''),
+      },
     },
     port: PORT,
   },
@@ -47,6 +44,8 @@ export default defineConfig({
     cssCodeSplit: false,
   },
   experimental: {
-    renderBuiltUrl: (filename) => `http://localhost:4001/custom-prefix/${filename}`,
+    renderBuiltUrl: (filename) => {
+      return `http://localhost:4001/custom-prefix/${filename}`;
+    },
   },
 });
